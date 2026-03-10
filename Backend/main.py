@@ -1,7 +1,7 @@
-from flask import Flask, jsonify
+from fastapi import FastAPI
 import pandas as pd
 
-app = Flask(__name__)
+app = FastAPI(title="Rain Precipitation API – Galapagos Islands")
 
 
 def load_sample_data() -> pd.DataFrame:
@@ -14,28 +14,29 @@ def load_sample_data() -> pd.DataFrame:
     return pd.DataFrame(data)
 
 
-@app.route("/")
+@app.get("/")
 def index():
-    return jsonify({"message": "Rain Precipitation API – Galapagos Islands"})
+    return {"message": "Rain Precipitation API – Galapagos Islands"}
 
 
-@app.route("/data")
+@app.get("/data")
 def get_data():
     df = load_sample_data()
-    return jsonify(df.to_dict(orient="records"))
+    return df.to_dict(orient="records")
 
 
-@app.route("/summary")
+@app.get("/summary")
 def get_summary():
     df = load_sample_data()
-    summary = {
+    return {
         "total_precipitation_mm": df["precipitation_mm"].sum(),
         "mean_precipitation_mm": df["precipitation_mm"].mean(),
         "max_precipitation_mm": df["precipitation_mm"].max(),
         "records": len(df),
     }
-    return jsonify(summary)
 
 
 if __name__ == "__main__":
-    app.run(debug=False)
+    import uvicorn
+
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
