@@ -24,32 +24,49 @@ The API will be available at `http://localhost:8000`.
 
 ## API Endpoints
 
-| Method | Path            | Description                                         |
-|--------|-----------------|-----------------------------------------------------|
-| GET    | `/`             | Health check / welcome message                      |
-| GET    | `/data`         | Raw sensor readings in the buffer                   |
-| GET    | `/summary`      | Aggregated precipitation statistics                 |
-| POST   | `/sensor-data`  | Receive a sensor reading (JSON body)                |
-| GET    | `/predict`      | Run ML pipeline and return rain forecast (1-6 hrs)  |
+| Method | Path            | Description                                              |
+|--------|-----------------|----------------------------------------------------------|
+| GET    | `/`             | Health check / welcome message                           |
+| GET    | `/api/stations` | All stations with current readings + rain forecast (frontend) |
+| POST   | `/sensor-data`  | Receive a sensor reading (JSON body with `station` id)   |
+| GET    | `/data`         | Raw sensor readings per station                          |
+| GET    | `/summary`      | Aggregated precipitation statistics across all stations  |
+| GET    | `/predict`      | Raw ML pipeline output for a single station (`?station=mira`) |
 
-### GET `/predict` response
+### GET `/api/stations` response
 
-Returns the predicted rain category for the next 1-6 hours once the buffer has >= 22 rows:
+Returns all 4 stations in the shape the frontend expects:
 
 ```json
 {
-  "station": "Santa Cruz",
-  "ds": "2026-03-10T14:30:00+00:00",
-  "label": "no_rain",
-  "label_2h": "light_rain",
-  "label_3h": "no_rain",
-  "label_4h": "heavy_rain",
-  "label_5h": "no_rain",
-  "label_6h": "no_rain"
+  "mira": {
+    "id": "mira",
+    "name": "El Mirador",
+    "lat": -0.886,
+    "lon": -89.539,
+    "altitude": 387,
+    "health": "healthy",
+    "lastUpdate": "2026-03-10T14:30:00+00:00",
+    "current": {
+      "weather": "clear",
+      "temperature": 25.1,
+      "humidity": 72,
+      "windSpeed": 4.2,
+      "precipitation": 0.0,
+      "solarRadiation": 0.85,
+      "soilMoisture": 0.32,
+      "netRadiation": 220
+    },
+    "forecast": {
+      "1h": { "class": 0, "prob": 0.85 },
+      "3h": { "class": 1, "prob": 0.62 },
+      "6h": { "class": 0, "prob": 0.45 }
+    }
+  }
 }
 ```
 
-Label values: `no_rain` (0), `light_rain` (1), `heavy_rain` (2).
+Forecast class values: `0` = no rain, `1` = light rain, `2` = heavy rain.
 
 ## Streaming simulator
 
@@ -61,13 +78,12 @@ Start the server first, then in a second terminal:
 uv run python simulator.py
 ```
 
-It pre-seeds the buffer with 24 rows so `/predict` is immediately available, then sends a new reading every 5 seconds.
+It pre-seeds all 4 station buffers with 24 rows each, then sends a new reading per station every 5 seconds.
 
 Options:
 
 ```bash
 uv run python simulator.py --interval 2       # send every 2 seconds
-uv run python simulator.py --station Isabela   # different station name
 uv run python simulator.py --no-seed           # skip pre-seeding
 ```
 

@@ -1,6 +1,6 @@
 """
-Streaming simulator — generates fake sensor readings and POSTs them
-to the FastAPI backend every INTERVAL seconds.
+Streaming simulator — generates fake sensor readings for all 4 stations
+and POSTs them to the FastAPI backend every INTERVAL seconds.
 
 Usage:
     uv run python simulator.py                  # default: 5s interval
@@ -14,6 +14,8 @@ import time
 import httpx
 
 API_URL = "http://localhost:8000/sensor-data"
+
+STATION_IDS = ["mira", "cer", "jun", "merc"]
 
 SENSOR_RANGES = {
     "AirTC_Avg":   (18.0, 32.0),
@@ -30,41 +32,43 @@ SENSOR_RANGES = {
 }
 
 
-def generate_reading(station: str = "Santa Cruz") -> dict:
+def generate_reading(station: str) -> dict:
     reading = {"station": station}
     for field, (lo, hi) in SENSOR_RANGES.items():
         reading[field] = round(random.uniform(lo, hi), 3)
     return reading
 
 
-def seed_buffer(client: httpx.Client, n: int = 24, station: str = "Santa Cruz"):
-    """Pre-seed the API buffer with n historical rows so lag features are ready."""
-    print(f"Seeding buffer with {n} rows...")
-    for i in range(n):
-        reading = generate_reading(station)
-        resp = client.post(API_URL, json=reading)
-        resp.raise_for_status()
-    print(f"Buffer seeded ({n} rows). Predictions are now available.\n")
+def seed_buffers(client: httpx.Client, n: int = 24):
+    """Pre-seed all station buffers so lag features are immediately available."""
+    total = n * len(STATION_IDS)
+    print(f"Seeding {len(STATION_IDS)} stations with {n} rows each ({total} total)...")
+    for station in STATION_IDS:
+        for _ in range(n):
+            reading = generate_reading(station)
+            resp = client.post(API_URL, json=reading)
+            resp.raise_for_status()
+    print("All buffers seeded. Predictions are now available.\n")
 
 
 def main():
     parser = argparse.ArgumentParser(description="Sensor data streaming simulator")
-    parser.add_argument("--interval", type=float, default=5.0, help="Seconds between readings")
-    parser.add_argument("--station", default="Santa Cruz", help="Station name")
-    parser.add_argument("--no-seed", action="store_true", help="Skip pre-seeding the buffer")
+    parser.add_argument("--interval", type=float, default=5.0, help="Seconds between ticks")
+    parser.add_argument("--no-seed", action="store_true", help="Skip pre-seeding the buffers")
     args = parser.parse_args()
 
     with httpx.Client(timeout=10) as client:
         if not args.no_seed:
-            seed_buffer(client, station=args.station)
+            seed_buffers(client)
 
         tick = 1
         while True:
-            reading = generate_reading(args.station)
-            resp = client.post(API_URL, json=reading)
-            resp.raise_for_status()
-            info = resp.json()
-            print(f"[{tick}] Sent | buffer={info['buffer_size']} | {reading}")
+            for station in STATION_IDS:
+                reading = generate_reading(station)
+                resp = client.post(API_URL, json=reading)
+                resp.raise_for_status()
+                info = resp.json()
+                print(f"[{tick}] {station} | buf={info['buffer_size']} | rain={reading['Rain_mm_Tot']:.1f}mm")
             tick += 1
             time.sleep(args.interval)
 
