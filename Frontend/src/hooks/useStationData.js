@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { fetchStationData } from "../api/mockData";
 
-const POLL_INTERVAL_MS = 30_000; // refresh every 30 s
+const POLL_INTERVAL_MS = 3_000; // refresh every 3 s
 
 export function useStationData() {
     const [stations, setStations] = useState(null);

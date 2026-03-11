@@ -16,6 +16,7 @@
     --color-accent: #38bdf8;
     --color-healthy: #22c55e;
     --color-degraded: #eab308;
+    --color-offline: #ef4444;
     --color-rain: #38bdf8;
     --color-heavy-rain: #6366f1;
     --color-sun: #fbbf24;
@@ -90,6 +91,42 @@ body,
 
 .header__dot--degraded {
     background: var(--color-degraded);
+}
+
+.header__dot--offline {
+    background: var(--color-offline);
+}
+
+/* ---- Header weather pills ---- */
+.header__weather-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.header__weather-pill--1 {
+    border-color: rgba(234, 179, 8, 0.3);
+    background: rgba(234, 179, 8, 0.08);
+}
+
+.header__weather-pill--2 {
+    border-color: rgba(99, 102, 241, 0.4);
+    background: rgba(99, 102, 241, 0.1);
+    animation: alertPulse 2s ease-in-out infinite;
+}
+
+.header__weather-label {
+    font-weight: 700;
+    color: var(--color-accent);
+}
+
+.header__weather-class {
+    color: var(--color-text-muted);
 }
 
 /* ---- Map ---- */
@@ -211,6 +248,11 @@ body,
     color: var(--color-degraded);
 }
 
+.health-badge--offline {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--color-offline);
+}
+
 /* ---- Stat grid ---- */
 .stat-grid {
     display: grid;
@@ -265,11 +307,20 @@ body,
     background: rgba(99, 102, 241, 0.08);
 }
 
+.forecast-row--now {
+    border-style: solid;
+    opacity: 1;
+}
+
 .forecast-row__horizon {
     font-size: 0.8rem;
     font-weight: 700;
     color: var(--color-accent);
     min-width: 36px;
+}
+
+.forecast-row__horizon--now {
+    color: var(--color-text);
 }
 
 .forecast-row__label {
@@ -401,10 +452,10 @@ body,
 
 .station-label {
     display: block;
-    font-size: 0.7rem;
-    font-weight: 600;
+    font-size: 0.95rem;
+    font-weight: 700;
     color: var(--color-text);
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 2px rgba(0, 0, 0, 0.9);
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9), 0 0 4px rgba(0, 0, 0, 1);
     white-space: nowrap;
     pointer-events: none;
 }

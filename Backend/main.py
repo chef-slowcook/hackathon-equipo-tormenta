@@ -60,7 +60,16 @@ STATION_BUFFERS: dict[str, deque] = {
 
 LABEL_CLASS_MAP = {"no_rain": 0, "light_rain": 1, "heavy_rain": 2}
 WEATHER_STATE_MAP = {0: "clear", 1: "light_rain", 2: "heavy_rain"}
-STALENESS_SECONDS = 60
+STALENESS_SECONDS = 4   # healthy → degraded after 4 s of silence
+OFFLINE_SECONDS = 8    # degraded → offline after 8 s of silence
+
+# Rain thresholds aligned with simulator WEATHER_STATES ranges
+RAIN_CLEAR_THRESHOLD = 0.1    # Rain_mm_Tot < 0.1 → clear
+RAIN_HEAVY_THRESHOLD = 1.5    # Rain_mm_Tot > 1.5 → heavy_rain
+
+# Per-station sticky rain state: keeps rain visible for at least 10 s
+RAIN_STICKY_SECONDS = 12
+_station_rain_state: dict[str, dict] = {}  # {sid: {weather, last_rain_time}}
 
 
 class SensorReading(BaseModel):
@@ -78,14 +87,30 @@ class SensorReading(BaseModel):
     Rain_mm_Tot: float
 
 
-def _build_current(row: dict) -> dict:
+def _build_current(row: dict, station_id: str) -> dict:
     precip = row.get("Rain_mm_Tot", 0)
-    if precip == 0:
-        weather = "clear"
-    elif precip <= 0.5:
-        weather = "light_rain"
+
+    # Classify raw weather using thresholds that match the simulator ranges
+    if precip < RAIN_CLEAR_THRESHOLD:
+        raw_weather = "clear"
+    elif precip <= RAIN_HEAVY_THRESHOLD:
+        raw_weather = "light_rain"
     else:
-        weather = "heavy_rain"
+        raw_weather = "heavy_rain"
+
+    # Sticky rain: once rain is detected, keep that state for at least RAIN_STICKY_SECONDS
+    now = datetime.now(timezone.utc)
+    cached = _station_rain_state.get(station_id, {})
+    last_rain_time = cached.get("last_rain_time")
+
+    if raw_weather != "clear":
+        _station_rain_state[station_id] = {"weather": raw_weather, "last_rain_time": now}
+        weather = raw_weather
+    elif last_rain_time and (now - last_rain_time) < timedelta(seconds=RAIN_STICKY_SECONDS):
+        weather = cached["weather"]
+    else:
+        _station_rain_state[station_id] = {"weather": "clear", "last_rain_time": None}
+        weather = "clear"
 
     return {
         "weather": weather,
@@ -141,21 +166,25 @@ def _build_forecast(buf: deque) -> dict:
                 forecast[h] = default_forecast[h]
 
         return forecast
-    except Exception:
+    except Exception as exc:
+        print(f"[forecast error] {exc}", flush=True)
         return default_forecast
 
 
 def _station_health(buf: deque) -> str:
     if not buf:
-        return "degraded"
+        return "offline"
     last_ds = buf[-1].get("ds", "")
     try:
         last_time = datetime.fromisoformat(last_ds)
-        if datetime.now(timezone.utc) - last_time < timedelta(seconds=STALENESS_SECONDS):
+        age = datetime.now(timezone.utc) - last_time
+        if age < timedelta(seconds=STALENESS_SECONDS):
             return "healthy"
+        if age < timedelta(seconds=OFFLINE_SECONDS):
+            return "degraded"
     except (ValueError, TypeError):
         pass
-    return "degraded"
+    return "offline"
 
 
 @app.get("/")
@@ -174,7 +203,7 @@ def get_stations():
             **meta,
             "health": _station_health(buf),
             "lastUpdate": last_row.get("ds", datetime.now(timezone.utc).isoformat()),
-            "current": _build_current(last_row),
+            "current": _build_current(last_row, sid),
             "forecast": _build_forecast(buf),
         }
     return result

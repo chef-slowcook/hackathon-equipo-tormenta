@@ -1,6 +1,6 @@
 import React from "react";
 import WeatherIcon from "./WeatherIcon";
-import { FORECAST_HORIZONS } from "../constants";
+import { FORECAST_HORIZONS, WEATHER_TO_CLASS } from "../constants";
 
 export default function StationOverview({ stations, onSelectStation }) {
     if (!stations) return null;
@@ -42,16 +42,30 @@ export default function StationOverview({ stations, onSelectStation }) {
                                         background:
                                             station.health === "healthy"
                                                 ? "var(--color-healthy)"
+                                                : station.health === "offline"
+                                                ? "var(--color-offline)"
                                                 : "var(--color-degraded)",
                                     }}
                                 />
                                 <span className="overview-card__name">{station.name}</span>
                                 <span className="overview-card__id">{station.id}</span>
+                                {station.health !== "offline" && (
+                                    <WeatherIcon
+                                        weatherClass={WEATHER_TO_CLASS[station.current?.weather] ?? 0}
+                                        size={18}
+                                    />
+                                )}
                             </div>
                             <div className="overview-card__stats">
-                                <span>{station.current.temperature}°C</span>
-                                <span>{station.current.precipitation} mm</span>
-                                <span>{station.current.humidity}%</span>
+                                {station.health === "offline" ? (
+                                    <span style={{ color: "var(--color-offline)", fontSize: "0.75rem" }}>No data</span>
+                                ) : (
+                                    <>
+                                        <span>{station.current.temperature}°C</span>
+                                        <span>{station.current.precipitation} mm</span>
+                                        <span>{station.current.humidity}%</span>
+                                    </>
+                                )}
                             </div>
                             <div className="overview-card__forecast">
                                 {FORECAST_HORIZONS.map((h) => (

@@ -2,7 +2,7 @@ import React from "react";
 import WeatherAnimation from "./WeatherAnimation";
 import WeatherIcon from "./WeatherIcon";
 import { PRECIP_THRESHOLDS } from "../api/mockData";
-import { CLASS_LABELS, CLASS_COLORS, FORECAST_HORIZONS } from "../constants";
+import { CLASS_LABELS, CLASS_COLORS, FORECAST_HORIZONS, WEATHER_TO_CLASS } from "../constants";
 
 function AlertBanner({ forecast }) {
     const hasHeavy = FORECAST_HORIZONS.some((h) => forecast[h].class === 2);
@@ -42,7 +42,7 @@ export default function StationPanel({ station, onClose }) {
                 {/* Health & meta */}
                 <div>
                     <span className={`health-badge health-badge--${health}`}>
-                        {health === "healthy" ? "● Online" : "● Degraded"}
+                        {health === "healthy" ? "● Online" : health === "offline" ? "● Offline" : "● Degraded"}
                     </span>
                     <p className="panel__meta">
                         ID: <strong>{id}</strong> · {altitude} m a.s.l. · {description}
@@ -87,6 +87,20 @@ export default function StationPanel({ station, onClose }) {
                 <div>
                     <p className="panel__section-title">Precipitation Nowcast</p>
                     <div className="forecast-list">
+                        {/* Live "Now" row derived from current sensor reading */}
+                        {(() => {
+                            const nowClass = WEATHER_TO_CLASS[current.weather] ?? 0;
+                            return (
+                                <div className={`forecast-row forecast-row--class-${nowClass} forecast-row--now`}>
+                                    <span className="forecast-row__horizon forecast-row__horizon--now">Now</span>
+                                    <WeatherIcon weatherClass={nowClass} size={22} />
+                                    <span className="forecast-row__label">{CLASS_LABELS[nowClass]}</span>
+                                    <span className="forecast-row__thresh">{current.precipitation} mm</span>
+                                    <span className="forecast-row__prob">live</span>
+                                </div>
+                            );
+                        })()}
+                        {/* ML model forecast rows */}
                         {FORECAST_HORIZONS.map((horizon) => {
                             const fc = forecast[horizon];
                             const thresh = PRECIP_THRESHOLDS[horizon];
