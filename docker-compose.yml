@@ -1,0 +1,32 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Backend/Dockerfile
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
+      interval: 5s
+      retries: 5
+      start_period: 10s
+
+  simulator:
+    build:
+      context: .
+      dockerfile: Backend/Dockerfile
+    command: ["python", "simulator.py"]
+    environment:
+      - API_URL=http://backend:8000/sensor-data
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: Frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend

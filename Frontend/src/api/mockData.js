@@ -1,6 +1,6 @@
 /**
- * Mock data layer for RainCaster Galapagos.
- * Replace these functions with real API calls when the backend is ready.
+ * Data layer for RainCaster Galapagos.
+ * Fetches live station data from the Backend API.
  *
  * Station coordinates from the official RainCaster guidelines (WGS84).
  */
@@ -52,65 +52,14 @@ export const PRECIP_THRESHOLDS = {
     "6h": { noRain: 0, lightMax: 0.762 },
 };
 
-function randomWeatherState() {
-    const r = Math.random();
-    if (r < 0.5) return "clear";
-    if (r < 0.8) return "light_rain";
-    return "heavy_rain";
-}
-
-function randomHealth() {
-    return Math.random() < 0.85 ? "healthy" : "degraded";
-}
-
-function randomForecastClass() {
-    const r = Math.random();
-    if (r < 0.5) return 0;
-    if (r < 0.8) return 1;
-    return 2;
-}
-
 /**
- * Simulates fetching current station data.
+ * Fetches current station data from the backend API.
  * Returns an object keyed by station id.
- *
- * When the backend is ready, replace this with:
- *   const res = await fetch(`${API_BASE}/stations`);
- *   return res.json();
  */
 export async function fetchStationData() {
-    // Simulate network delay
-    await new Promise((r) => setTimeout(r, 300));
-
-    const now = new Date();
-
-    return Object.fromEntries(
-        STATIONS.map((station) => {
-            const weather = randomWeatherState();
-            return [
-                station.id,
-                {
-                    ...station,
-                    health: randomHealth(),
-                    lastUpdate: now.toISOString(),
-                    current: {
-                        weather,
-                        temperature: +(20 + Math.random() * 8).toFixed(1),
-                        humidity: +(60 + Math.random() * 35).toFixed(0),
-                        windSpeed: +(1 + Math.random() * 8).toFixed(1),
-                        windDir: Math.floor(Math.random() * 360),
-                        precipitation: weather === "clear" ? 0 : +(Math.random() * 2).toFixed(2),
-                        solarRadiation: +(0.1 + Math.random() * 0.9).toFixed(2),
-                        soilMoisture: +(0.1 + Math.random() * 0.5).toFixed(2),
-                        netRadiation: +(50 + Math.random() * 300).toFixed(0),
-                    },
-                    forecast: {
-                        "1h": { class: randomForecastClass(), prob: +(0.5 + Math.random() * 0.5).toFixed(2) },
-                        "3h": { class: randomForecastClass(), prob: +(0.4 + Math.random() * 0.5).toFixed(2) },
-                        "6h": { class: randomForecastClass(), prob: +(0.3 + Math.random() * 0.5).toFixed(2) },
-                    },
-                },
-            ];
-        })
-    );
+    const res = await fetch("/api/stations");
+    if (!res.ok) {
+        throw new Error(`API error: ${res.status} ${res.statusText}`);
+    }
+    return res.json();
 }
