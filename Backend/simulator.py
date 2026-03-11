@@ -8,12 +8,13 @@ Usage:
 """
 
 import argparse
+import os
 import random
 import time
 
 import httpx
 
-API_URL = "http://localhost:8000/sensor-data"
+API_URL = os.environ.get("API_URL", "http://localhost:8000/sensor-data")
 
 STATION_IDS = ["mira", "cer", "jun", "merc"]
 

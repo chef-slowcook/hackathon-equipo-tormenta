@@ -94,25 +94,24 @@ FastAPI provides auto-generated docs out of the box:
 - Swagger UI: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
 
-## Docker
+## Docker Compose (full stack)
 
-Build and run in one command:
-
-```bash
-docker build -t backend . && docker run -p 8000:8000 backend
-```
-
-Or step by step:
+From the **project root**, start all services (backend + simulator + frontend):
 
 ```bash
-# Build the image
-docker build -t backend .
-
-# Run the container
-docker run -p 8000:8000 backend
+docker compose up --build
 ```
 
-The API will be available at `http://localhost:8000`.
+This starts:
+- **Backend** at `http://localhost:8000`
+- **Simulator** (auto-seeds data and streams every 5s)
+- **Frontend** at `http://localhost:3000`
+
+Stop everything:
+
+```bash
+docker compose down
+```
 
 ## Managing dependencies
 

@@ -9,13 +9,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import pandas as pd
 
-ML_SRC = os.path.join(os.path.dirname(__file__), "..", "ML", "src")
+ML_SRC = os.environ.get(
+    "ML_SRC",
+    os.path.join(os.path.dirname(__file__), "..", "ML", "src"),
+)
 sys.path.insert(0, ML_SRC)
 
 from pipeline import model_inference
 
-MODELS_PATH = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "ML", "notebooks", "modelling", "models")
+MODELS_PATH = os.environ.get(
+    "MODELS_PATH",
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "ML", "notebooks", "modelling", "models")),
 )
 
 app = FastAPI(title="Rain Precipitation API – Galapagos Islands")
@@ -110,7 +114,7 @@ def _build_forecast(buf: deque) -> dict:
     try:
         df = pd.DataFrame(list(buf))
         df["ds"] = pd.to_datetime(df["ds"])
-        preds = model_inference(df)
+        preds = model_inference(df, models_path=MODELS_PATH)
         row = preds.iloc[-1].to_dict()
 
         horizon_map = {
@@ -224,7 +228,7 @@ def predict_rain(station: str = "mira"):
 
     df = pd.DataFrame(list(buf))
     df["ds"] = pd.to_datetime(df["ds"])
-    preds = model_inference(df)
+    preds = model_inference(df, models_path=MODELS_PATH)
     result = preds.iloc[-1].to_dict()
     result["ds"] = str(result.get("ds", ""))
     return result

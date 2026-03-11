@@ -20,6 +20,11 @@ def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
     df = filter_columns_high_corr(df)
     return df
 
-def model_inference(df: pd.DataFrame) -> pd.DataFrame:
+DEFAULT_MODELS_PATH = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "notebooks", "modelling", "models")
+)
+
+
+def model_inference(df: pd.DataFrame, models_path: str = DEFAULT_MODELS_PATH) -> pd.DataFrame:
     df = preprocess_data(df)
-    return get_predictions(df)
+    return get_predictions(df, models_path=models_path)
