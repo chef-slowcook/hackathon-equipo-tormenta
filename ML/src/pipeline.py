@@ -1,4 +1,9 @@
-import pandas as pd 
+import os
+import sys
+import pandas as pd
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from utils import filter_useful_columns, filter_columns_high_corr
 from feature_engineering import get_features
 from model_inference import get_predictions
