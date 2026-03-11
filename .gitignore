@@ -209,3 +209,6 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+*.ipynb
+ML/data
+ML/notebooks/data_processing
